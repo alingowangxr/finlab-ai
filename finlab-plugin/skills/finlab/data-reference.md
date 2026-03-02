@@ -2,7 +2,7 @@
 
 ## Overview
 
-The FinLab data module provides comprehensive access to Taiwan stock market data, including prices, financial statements, fundamental metrics, institutional trading, and economic indicators. Use `data.get()` to retrieve any dataset using a simple path-based syntax.
+The FinLab data module provides comprehensive access to stock market data, including prices, financial statements, fundamental metrics, institutional trading, and economic indicators. Use `data.get()` to retrieve any dataset using a simple path-based syntax.
 
 ---
 
@@ -81,7 +81,7 @@ data.search(keyword: str = None, market: str = 'tw') -> list
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
 | `keyword` | str | None | Filter datasets by keyword (case-insensitive substring match). Returns all if omitted. |
-| `market` | str | 'tw' | Market to search: `'tw'` (Taiwan stocks), `'us'` (US stocks, testing), or `'all'` (both markets). |
+| `market` | str | 'tw' | Market to search: `'tw'`, `'us'`, or `'all'` (both markets). |
 
 **Returns:** List of `"table:column"` strings, usable directly with `data.get()`.
 
@@ -89,7 +89,7 @@ data.search(keyword: str = None, market: str = 'tw') -> list
 ```python
 from finlab import data
 
-# List all available datasets (Taiwan market)
+# List all available datasets
 all_data = data.search()
 
 # Search by keyword
@@ -179,7 +179,7 @@ Limit the data fetch scope by market or industry category using a context manage
 
 ### Supported Markets
 - `ALL` - All markets
-- `TSE` - Taiwan Stock Exchange (上市)
+- `TSE` - Listed stocks (上市)
 - `OTC` - Over-The-Counter (上櫃)
 - `TSE_OTC` - Both TSE and OTC
 - `ETF` - Exchange Traded Funds
@@ -350,9 +350,9 @@ The `fundamental_features` table contains 50+ calculated financial metrics:
 
 | Table Name | Description | Available Columns |
 |-----------|-------------|-------------------|
-| `tw_business_indicators` | 台灣景氣指標 | 景氣對策信號(分), 領先指標綜合指數(點), 領先指標不含趨勢指數(點), 同時指標綜合指數(點), 同時指標不含趨勢指數(點), 落後指標綜合指數(點), 落後指標不含趨勢指數(點) |
-| `tw_total_pmi` | 台灣製造業採購經理人指數 | 製造業PMI, 新增訂單數量, 生產數量, 人力僱用數量, 供應商交貨時間, 存貨, 客戶存貨, 原物料價格, 未完成訂單, 新增出口訂單, 進口原物料數量, 未來六個月展望 |
-| `tw_total_nmi` | 台灣非製造業採購經理人指數 | 臺灣非製造業NMI, 商業活動, 新增訂單, 人力僱用, 供應商交貨時間, 存貨, 採購價格, 未完成訂單, 服務輸出出口, 服務輸入進口, 服務收費價格, 存貨觀感, 未來六個月展望 |
+| `tw_business_indicators` | 景氣指標 | 景氣對策信號(分), 領先指標綜合指數(點), 領先指標不含趨勢指數(點), 同時指標綜合指數(點), 同時指標不含趨勢指數(點), 落後指標綜合指數(點), 落後指標不含趨勢指數(點) |
+| `tw_total_pmi` | 製造業採購經理人指數 | 製造業PMI, 新增訂單數量, 生產數量, 人力僱用數量, 供應商交貨時間, 存貨, 客戶存貨, 原物料價格, 未完成訂單, 新增出口訂單, 進口原物料數量, 未來六個月展望 |
+| `tw_total_nmi` | 非製造業採購經理人指數 | 臺灣非製造業NMI, 商業活動, 新增訂單, 人力僱用, 供應商交貨時間, 存貨, 採購價格, 未完成訂單, 服務輸出出口, 服務輸入進口, 服務收費價格, 存貨觀感, 未來六個月展望 |
 | `tw_monetary_aggregates` | 貨幣總計數年增率 | 年增率(%) |
 
 ### Futures Data
@@ -376,7 +376,7 @@ The `fundamental_features` table contains 50+ calculated financial metrics:
 | `company_basic_info` | 企業基本資訊 |
 | `company_main_business` | 企業主要經營業務 |
 | `important_subsidiary` | 企業重要子公司資訊 |
-| `security_categories` | 台股證券分類 |
+| `security_categories` | 證券分類 |
 | `security_industry_themes` | 產業題材 |
 
 **Stock ID to Name Mapping:**

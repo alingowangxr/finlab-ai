@@ -1,6 +1,6 @@
 ---
 name: finlab
-description: Comprehensive guide for FinLab quantitative trading package for Taiwan stock market (台股). Use when working with trading strategies, backtesting, Taiwan stock data, FinLabDataFrame, factor analysis, stock selection, or when the user mentions FinLab, trading, 回測, 策略, 台股, quant trading, or stock market analysis. Includes data access, strategy development, backtesting workflows, and best practices.
+description: Comprehensive guide for FinLab quantitative trading package. Use when working with trading strategies, backtesting, stock data, FinLabDataFrame, factor analysis, stock selection, or when the user mentions FinLab, trading, quant trading, or stock market analysis. Includes data access, strategy development, backtesting workflows, and best practices.
 compatibility: Requires Python 3.10+ and uv package manager (https://docs.astral.sh/uv/)
 ---
 
@@ -11,41 +11,6 @@ compatibility: Requires Python 3.10+ and uv package manager (https://docs.astral
 **You are not a tutorial. You are an executor.**
 
 When a user asks for a backtest, they want **results on screen**, not instructions to copy-paste. When they ask for a chart, they want to **see the chart**, not a filepath to open manually.
-
-### The Rule
-
-```
-User says → Result appears
-```
-
-That's it. Everything in between is YOUR job. Not theirs.
-
-### What This Means
-
-| User Request | ❌ WRONG | ✅ RIGHT |
-|--------------|----------|----------|
-| "Run a backtest" | "Here's the code, run it yourself" | Execute the code, show the metrics |
-| "Show me the chart" | "I saved it to `/tmp/chart.png`" | Execute `open /tmp/chart.png` |
-| "What's the Sharpe ratio?" | "Use `report.metrics.sharpe_ratio()`" | Run it, print: "Sharpe: 1.42" |
-| "Compare these strategies" | "Here's how to compare them..." | Run both, show comparison table |
-
-### Implementation
-
-1. **Write code? Run it.** Use Bash to execute Python via `uv run`. Don't dump code blocks and walk away.
-
-2. **Generate files? Open them.** After saving a chart/report, run `open <filepath>` (macOS) or equivalent.
-
-3. **Fetch data? Show it.** Print the actual numbers. Users came for insights, not import statements.
-
-4. **Error occurs? Fix it.** Don't report the error and stop. Debug, retry, solve.
-
-5. **Missing dependencies? Install them.** Use `uv pip install <package>` — never ask the user to install manually.
-
-### The Linus Test
-
-> "Talk is cheap. Show me the ~~code~~ results."
-
-If your response requires the user to do ANYTHING other than read the answer, you failed. Go back and actually execute.
 
 ---
 
@@ -109,7 +74,7 @@ If your response requires the user to do ANYTHING other than read the answer, yo
 
 ### Usage Reset
 
-- Resets daily at **8:00 AM Taiwan time (UTC+8)**
+- Resets daily at **8:00 AM UTC+8**
 - When limit exceeded, user must wait for reset or upgrade to VIP
 
 
@@ -340,7 +305,6 @@ Direct users to open an issue on GitHub: https://github.com/koreal6803/finlab-ai
 
 ## Notes
 
-- All strategy code examples use Traditional Chinese (繁體中文) variable names where appropriate
-- This package is specifically designed for Taiwan stock market (TSE/OTC)
+- Some data columns use Chinese names — this is expected, use them as-is in `data.get()` calls
 - Data frequency varies: daily (price), monthly (revenue), quarterly (financial statements)
 - Always use `sim(..., upload=False)` for experiments, `upload=True` only for final production strategies

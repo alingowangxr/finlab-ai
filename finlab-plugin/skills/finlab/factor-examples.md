@@ -880,7 +880,7 @@ close = data.get("price:收盤價")
 position = close < 0  # Start with all False
 
 position["2330"] = 0.5   # Long TSMC with 50% weight
-position["1101"] = -0.5  # Short Taiwan Cement with 50% weight
+position["1101"] = -0.5  # Short stock 1101 with 50% weight
 
 report = backtest.sim(position)
 ```
