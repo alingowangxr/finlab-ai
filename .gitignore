@@ -38,10 +38,5 @@ Thumbs.db
 .env
 .env.local
 
-# Cloudflare Workers
-workers/node_modules/
-workers/.wrangler/
-workers/src/docs.ts
-
 # Secret tokens
 .mcpregistry_*

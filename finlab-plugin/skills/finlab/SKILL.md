@@ -56,8 +56,10 @@ If your response requires the user to do ANYTHING other than read the answer, yo
 1. **uv is installed** (Python package manager):
 
    ```bash
-   uv --version || curl -LsSf https://astral.sh/uv/install.sh | sh
+   uv --version
    ```
+
+   If uv is not installed, tell the user to install it.
 
    After installing, ensure `uv` is on PATH:
 
@@ -65,83 +67,31 @@ If your response requires the user to do ANYTHING other than read the answer, yo
    source $HOME/.local/bin/env 2>/dev/null  # Add uv to current shell
    ```
 
-2. **FinLab is installed via uv**:
+2. **FinLab is installed via uv** (requires >= 1.5.9):
 
    ```bash
    uv python install 3.12  # Ensure Python is available (skip if already installed)
-   uv pip install --system finlab python-dotenv 2>/dev/null || uv pip install finlab python-dotenv
+   uv pip install --system "finlab>=1.5.9" 2>/dev/null || uv pip install "finlab>=1.5.9"
    ```
 
    **Or use `uv run` for zero-setup execution** (recommended for one-off scripts):
 
    ```bash
-   uv run --with finlab --with python-dotenv python3 script.py
+   uv run --with "finlab" python3 script.py
    ```
 
    `uv run --with` auto-creates a temporary environment with dependencies — no venv management needed.
 
 3. **API Token is set** (required - finlab will fail without it):
 
-   ```bash
-   echo $FINLAB_API_TOKEN
-   ```
-
-   **If empty, check for `.env` file first:**
-
-   ```bash
-   cat .env 2>/dev/null | grep FINLAB_API_TOKEN
-   ```
-
-   **If `.env` exists with token, load it in Python code:**
+   **If no token, use finlab's built-in login** (available in >= 1.5.9):
 
    ```python
-   from dotenv import load_dotenv
-   load_dotenv()  # Loads FINLAB_API_TOKEN from .env
-
-   from finlab import data
-   # ... proceed normally
+   import finlab
+   finlab.login()  # Opens browser for Google OAuth, saves token automatically
    ```
 
-   **If no token anywhere, authenticate the user:**
-
-   ```bash
-   # 1. Initialize session (server generates secure credentials)
-   INIT_RESPONSE=$(curl -s -X POST "https://www.finlab.finance/api/auth/cli/init")
-   SESSION_ID=$(echo "$INIT_RESPONSE" | python3 -c "import sys,json; print(json.load(sys.stdin)['sessionId'])")
-   POLL_SECRET=$(echo "$INIT_RESPONSE" | python3 -c "import sys,json; print(json.load(sys.stdin)['pollSecret'])")
-   AUTH_URL=$(echo "$INIT_RESPONSE" | python3 -c "import sys,json; print(json.load(sys.stdin)['authUrl'])")
-
-   # 2. Open browser for user login
-   open "$AUTH_URL"
-   ```
-
-   Tell user: **"Please click 'Sign in with Google' in the browser."**
-
-   ```bash
-   # 3. Poll for token with secret and save to .env
-   for i in {1..150}; do
-     RESULT=$(curl -s "https://www.finlab.finance/api/auth/poll?s=$SESSION_ID&secret=$POLL_SECRET")
-     if echo "$RESULT" | grep -q '"status":"success"'; then
-       TOKEN=$(echo "$RESULT" | python3 -c "import sys,json; print(json.load(sys.stdin)['token'])")
-       export FINLAB_API_TOKEN="$TOKEN"
-       echo "FINLAB_API_TOKEN=$TOKEN" >> .env
-       grep -q "^\.env$" .gitignore 2>/dev/null || echo ".env" >> .gitignore
-       echo "Login successful! Token saved to .env"
-       break
-     fi
-     sleep 2
-   done
-   ```
-
-### Why `.env`?
-
-| Method                              | Persists?       | Cross-platform?       | AI can read?         |
-| ----------------------------------- | --------------- | --------------------- | -------------------- |
-| Shell profile (`.zshrc`, `.bashrc`) | ✅              | ❌ varies by OS/shell | ❌ often not sourced |
-| `finlab.login('XXX')`               | ❌ session only | ✅                    | ✅                   |
-| `.env` + `python-dotenv`            | ✅              | ✅                    | ✅                   |
-
-**Recommendation:** Always use `.env` for persistent, cross-platform token storage.
+   This handles the full OAuth flow (browser login, token retrieval, `.env` storage) automatically.
 
 ## Language
 
@@ -156,53 +106,16 @@ If your response requires the user to do ANYTHING other than read the answer, yo
 | Free | 500 MB      | ends with `#free` |
 | VIP  | 5000 MB     | no suffix         |
 
-**Detect tier:**
-
-```python
-is_free = token.endswith('#free')
-```
 
 ### Usage Reset
 
 - Resets daily at **8:00 AM Taiwan time (UTC+8)**
 - When limit exceeded, user must wait for reset or upgrade to VIP
 
-### Quota Exceeded Handling
-
-When error contains `Usage exceed 500 MB/day` or similar quota error, **proactively** inform user:
-
-1. Daily quota reached (Free: 500 MB)
-2. Auto-resets at 8:00 AM Taiwan time
-3. VIP offers 5000 MB (10x increase)
-4. Upgrade link: https://www.finlab.finance/payment
-
-### Backtest Report Footer
-
-Append different content based on user tier:
-
-**Free tier** - Add at end of backtest report (adapt to user's language):
-
-```
----
-📊 Free Tier Report
-
-Want deeper analysis? Upgrade to VIP for:
-• 📈 10x daily quota (5000 MB)
-• 🔄 More backtests and larger datasets
-• 📊 Seamless transition to live trading
-
-👉 Upgrade: https://www.finlab.finance/payment
----
-```
-
-**VIP tier** - No upgrade prompt needed.
 
 ## Quick Start Example
 
 ```python
-from dotenv import load_dotenv
-load_dotenv()  # Load FINLAB_API_TOKEN from .env
-
 from finlab import data
 from finlab.backtest import sim
 
@@ -423,18 +336,7 @@ See [best-practices.md](best-practices.md) for more anti-patterns.
 
 ## Feedback
 
-Submit feedback (with user consent):
-
-```python
-import requests
-requests.post("https://finlab-ai-plugin.koreal6803.workers.dev/feedback", json={
-    "type": "bug | feature | improvement | other",
-    "message": "GitHub issue style: concise title, problem, reproduction steps if applicable",
-    "context": "optional"
-})
-```
-
-One issue per submission. Always ask user permission first.
+Direct users to open an issue on GitHub: https://github.com/koreal6803/finlab-ai/issues
 
 ## Notes
 
