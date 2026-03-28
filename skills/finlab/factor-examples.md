@@ -215,21 +215,12 @@ position = position.reindex(rev.index_str_to_date().index, method="ffill")
 inf_ratio = (data.get("financial_statement:研究發展費") /
              data.get("financial_statement:營業收入淨額")).replace(np.inf, np.nan)
 
-# Inventory - large holders (>400 lots)
-inventory = data.get("inventory")
-boss_inventory = inventory[
-    (inventory.持股分級.astype(int) >= 12) &
-    (inventory.持股分級.astype(int) <= 15)
-].reset_index().groupby(["date", "stock_id"]).agg({
-    "占集保庫存數比例": "sum"
-}).reset_index().pivot("date", "stock_id")["占集保庫存數比例"]
+# Inventory - use data.search('inventory') to find available ETL datasets
+# Large holders (>400 lots) shareholding ratio
+boss_inventory = data.get("etl:inventory:大於四百張佔比")
 
-# Inventory - retail investors (<50 lots)
-small_inv = inventory[
-    (inventory.持股分級.astype(int) <= 8)
-].reset_index().groupby(["date", "stock_id"]).agg({
-    "占集保庫存數比例": "sum"
-}).reset_index().pivot("date", "stock_id")["占集保庫存數比例"]
+# Retail investors (<50 lots) shareholding ratio
+small_inv = data.get("etl:inventory:小於五十張佔比")
 ```
 
 ---
@@ -494,61 +485,30 @@ position = 外資[連續同買].is_largest(10)
 #### Shareholding Distribution
 
 ```python
-inventory = data.get("inventory")
+# Use data.search('inventory') to find available ETL datasets
+boss_ratio = data.get("etl:inventory:大於四百張佔比")
+boss800_ratio = data.get("etl:inventory:大於八百張佔比")
+small_ratio = data.get("etl:inventory:小於五十張佔比")
+shareholder_count = data.get("etl:inventory:全部人數")
 董監持有股數占比 = data.get("internal_equity_changes:董監持有股數占比")
 
 # Large holders (>400 lots) shareholding >= 30%
-boss_inv = inventory[
-    (inventory.持股分級.astype(int) >= 12) &
-    (inventory.持股分級.astype(int) <= 15)
-].reset_index().groupby(["date", "stock_id"]).agg({
-    "占集保庫存數比例": "sum"
-}).reset_index().pivot("date", "stock_id")["占集保庫存數比例"] >= 30
+boss_inv = boss_ratio >= 30
 
 # Large holders (>800 lots) shareholding >= 30%
-boss_inv = inventory[
-    (inventory.持股分級.astype(int) >= 14) &
-    (inventory.持股分級.astype(int) <= 15)
-].reset_index().groupby(["date", "stock_id"]).agg({
-    "占集保庫存數比例": "sum"
-}).reset_index().pivot("date", "stock_id")["占集保庫存數比例"] >= 30
+boss_inv_800 = boss800_ratio >= 30
 
 # Large holders (>400 lots) increasing for 3 consecutive periods
-from finlab import dataframe
-boss_inv_trend = dataframe.FinlabDataFrame(
-    inventory[
-        (inventory.持股分級.astype(int) >= 12) &
-        (inventory.持股分級.astype(int) <= 15)
-    ].reset_index().groupby(["date", "stock_id"]).agg({
-        "占集保庫存數比例": "sum"
-    }).reset_index().pivot("date", "stock_id")["占集保庫存數比例"]
-).rise().sustain(3)
+boss_inv_trend = boss_ratio.rise().sustain(3)
 
 # Retail investors (<50 lots) shareholding <= 30%
-small_inv = inventory[
-    (inventory.持股分級.astype(int) <= 8)
-].reset_index().groupby(["date", "stock_id"]).agg({
-    "占集保庫存數比例": "sum"
-}).reset_index().pivot("date", "stock_id")["占集保庫存數比例"] <= 30
+small_inv = small_ratio <= 30
 
 # Retail investors (<50 lots) decreasing for 3 consecutive periods
-from finlab import dataframe
-small_inv_trend = dataframe.FinlabDataFrame(
-    inventory[
-        (inventory.持股分級.astype(int) <= 8)
-    ].reset_index().groupby(["date", "stock_id"]).agg({
-        "占集保庫存數比例": "sum"
-    }).reset_index().pivot("date", "stock_id")["占集保庫存數比例"]
-).fall().sustain(3)
+small_inv_trend = small_ratio.fall().sustain(3)
 
 # Total number of shareholders decreasing for 3 consecutive periods
-inv_small_people_trend = dataframe.FinlabDataFrame(
-    inventory[
-        (inventory.人數.astype(int) == 17)
-    ].reset_index().groupby(["date", "stock_id"]).agg({
-        "人數": "sum"
-    }).reset_index().pivot("date", "stock_id")["人數"]
-).fall().sustain(3)
+inv_small_people_trend = shareholder_count.fall().sustain(3)
 
 # Director/supervisor shareholding > 30%
 boss_hold = 董監持有股數占比 > 30

@@ -28,8 +28,9 @@ from finlab import data
 # Retrieve data using TABLE:COLUMN format
 df = data.get('price:收盤價')
 
-# For tables without columns, use TABLE directly
-inventory = data.get('inventory')
+# Use data.search() to find available ETL data
+# data.search('inventory')  # Discover available inventory ETL datasets
+boss_ratio = data.get('etl:inventory:大於四百張佔比')
 ```
 
 ### Data Path Construction
