@@ -149,7 +149,7 @@ with data.universe(market='TSE_OTC', category=['水泥工業']):
 data.set_universe(market='TSE_OTC', category='半導體')
 ```
 
-See [data-reference.md](data-reference.md) for complete data catalog.
+Use `data.search('keyword')` to discover available datasets (supports `market='us'` or `market='tw'`).
 
 ### Step 2: Create Factors & Conditions
 
@@ -262,7 +262,6 @@ See [trading-reference.md](trading-reference.md) for complete broker setup and O
 
 | File                                                           | Content                                    |
 | -------------------------------------------------------------- | ------------------------------------------ |
-| [data-reference.md](data-reference.md)                         | `data.get()`, `data.universe()`, 900+ 欄位 |
 | [backtesting-reference.md](backtesting-reference.md)           | `sim()` 參數、stop-loss、rebalancing       |
 | [trading-reference.md](trading-reference.md)                   | 券商設定、OrderExecutor、Position          |
 | [factor-examples.md](factor-examples.md)                       | 60+ 策略範例                               |

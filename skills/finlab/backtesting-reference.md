@@ -402,6 +402,6 @@ report.display()
 ## Related References
 
 - [FinlabDataFrame Reference](dataframe-reference.md) - Learn about enhanced DataFrame methods
-- [Data Reference](data-reference.md) - Explore available data sources
+- Use `data.search('keyword')` to explore available data sources
 - [Factor Examples](factor-examples.md) - See complete strategy examples
 - [Factor Analysis Reference](factor-analysis-reference.md) - Analyze factor performance
