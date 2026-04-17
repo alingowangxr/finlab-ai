@@ -7,6 +7,23 @@ This reference covers the complete workflow for executing trades from backtest r
 1. **Position Calculation**: Convert backtest results to share quantities
 2. **Broker Connection**: Configure and connect to your broker account
 3. **Order Execution**: Create, update, and manage orders via OrderExecutor
+4. **Realtime Sync** *(v2.0.0)*: Subscribe to live position/fill streams via `PositionStreamMixin`
+
+---
+
+## Typed Data Contracts — `finlab.schemas`
+
+*(v1.5.9)* `finlab.schemas` exposes formal dataclass / TypedDict contracts used across the trading stack. Prefer these over untyped dict access when writing production integrations — the types are enforced at boundaries (`PortfolioSyncManager`, `OrderExecutor`) and catch schema drift at code-review time.
+
+```python
+from finlab.schemas import (
+    PositionEntry,   # one holding line: stock_id, quantity, order_condition, weight, ...
+    OrderEntry,      # one planned order: stock_id, quantity, action, price, ...
+    PortfolioData,   # full portfolio snapshot consumed by PortfolioSyncManager
+)
+```
+
+**Deprecation note:** `stock_id` continues to work, but new typed APIs prefer `symbol` — see `docs/details/typed_data_interfaces.md` in the finlab repo. The migration policy is: `stock_id` remains accepted but aliased to `symbol` in dataclasses.
 
 ---
 
@@ -334,6 +351,36 @@ executor.cancel_orders()
 
 ---
 
+#### generate_orders() / generate_order_entries()
+
+*(v1.5.9)* Compute the order diff (current position → target position) without sending anything to the broker. Useful for dry-runs, order inspection, and custom execution pipelines.
+
+**Signature:**
+```python
+executor.generate_orders(
+    as_entries: bool = False,
+    quantity_type: str = 'shares'   # 'shares' | 'lots' | 'weight'
+) -> list[dict] | list[OrderEntry]
+
+executor.generate_order_entries() -> list[OrderEntry]  # typed convenience API
+```
+
+**Example:**
+```python
+# Raw dict list (legacy)
+orders = executor.generate_orders()
+
+# Typed OrderEntry list — preferred for new code
+entries = executor.generate_order_entries()
+for e in entries:
+    print(f"{e.stock_id} {e.action} qty={e.quantity} @ {e.price}")
+
+# Use weight units (fraction of fund) instead of share counts
+w_orders = executor.generate_orders(quantity_type='weight')
+```
+
+---
+
 ## Check Account Position
 
 Query current holdings from broker.
@@ -342,6 +389,53 @@ Query current holdings from broker.
 # Get current holdings
 print(acc.get_position())
 ```
+
+---
+
+## PortfolioSyncManager — Typed Data APIs
+
+*(v1.5.9)* In addition to `to_file()` / `from_file()` / `to_cloud()` / `from_cloud()`, `PortfolioSyncManager` now exposes typed data access:
+
+```python
+from finlab.portfolio import PortfolioSyncManager
+from finlab.schemas import PortfolioData
+
+pm = PortfolioSyncManager(...)
+
+# Untyped dict — legacy
+raw = pm.get_data()
+pm.set_data(raw)
+
+# Typed — preferred for new code
+data: PortfolioData = pm.get_data_typed()
+pm.set_data_typed(data)
+```
+
+The typed pair validates the payload against the `PortfolioData` schema at the boundary, so schema regressions surface immediately instead of propagating into persisted state.
+
+---
+
+## Realtime Position Streaming — `PositionStreamMixin`
+
+*(v2.0.0)* `RealtimeProvider` subclasses auto-inherit a `subscribe_positions()` / `on_position()` interface for push-based position updates. Internally this uses a hybrid strategy — initialize via `get_position()`, update in real-time via broker Fill events, and periodically reconcile via polling (default 30s).
+
+```python
+from finlab.online.sinopac_account import SinopacAccount
+
+acc = SinopacAccount()
+
+# Subscribe to live position updates
+def on_update(update):
+    # update is a PositionUpdate dataclass; snapshot_key() deduplicates
+    print(update.snapshot_key(), update.symbol, update.quantity)
+
+acc.subscribe_positions()
+acc.on_position(on_update)
+```
+
+**Why hybrid:** Fill-event streams catch fills with sub-second latency but can miss events during disconnects; polling catches missed state but is slow. Combining both gives real-time responsiveness without state divergence risk.
+
+The `PositionUpdate` dataclass has a `snapshot_key()` method that you should use for deduplication in your consumer — duplicate messages are expected when fills and polling reconciliation arrive close together.
 
 ---
 

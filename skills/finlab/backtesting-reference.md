@@ -72,13 +72,13 @@ sim(
 
 #### fee_ratio
 - **Type:** `float`
-- **Default:** `1.425/1000`
-- **Description:** Commission fee ratio applied during trades.
+- **Default:** Market-specific *(v1.5.9)* — TW: `1.425/1000`, US: resolved from the active `Market` subclass
+- **Description:** Commission fee ratio applied during trades. When not explicitly provided, `sim()` consults the target `Market` for its default instead of hardcoding Taiwan values, so US/CB backtests use the correct fee schedule automatically.
 
 #### tax_ratio
 - **Type:** `float`
-- **Default:** `3/1000`
-- **Description:** Transaction tax ratio applied when selling stocks.
+- **Default:** Market-specific *(v1.5.9)* — TW: `3/1000`, US: `0`
+- **Description:** Transaction tax ratio applied when selling stocks. Resolved from the active `Market` when omitted.
 
 #### name
 - **Type:** `str`
@@ -396,6 +396,51 @@ with data.universe(market='TSE_OTC', exclude_category='金融'):
 print(report.get_metrics())
 report.display()
 ```
+
+---
+
+## Lookahead Bias Self-Check — `verify_strategy()`
+
+*(v1.5.8)* Before trusting a backtest, run the automated lookahead detector. It replays the strategy twice with truncated data and flags any positions that differ when they shouldn't — a classic signature of future data leaking into today's signal.
+
+```python
+from finlab.verify import verify_strategy
+
+def build_position():
+    # ... your strategy that returns a position DataFrame
+    return position
+
+verify_strategy(build_position)
+```
+
+If it raises, the strategy's output changed depending on data only visible in the future — fix the signal before proceeding to live trading.
+
+---
+
+## Exception Hierarchy — `finlab.exceptions`
+
+*(v2.0.0)* Previously most errors were raised as bare `Exception` or `ValueError`. Production code can now `except` on specific subclasses:
+
+```python
+from finlab.exceptions import (
+    FinlabError,      # root — catch-all for finlab-specific errors
+    DataError,        # data fetch / parsing / schema
+    BacktestError,    # sim() validation and execution
+    BrokerError,      # broker account / order submission
+    AuthError,        # login / token refresh
+    PortfolioError,   # PortfolioSyncManager sync failures
+    ConfigError,      # invalid configuration
+)
+
+try:
+    report = backtest.sim(position, resample='M')
+except BacktestError as e:
+    logger.warning(f"backtest failed: {e}")
+except DataError:
+    logger.error("data layer failure — abort run")
+```
+
+Internally `sim()` was refactored (v2.0.0) into five independently testable stages — `_validate_sim_inputs`, `_prepare_price_data`, `_normalize_position`, `_execute_simulation`, `_build_sim_report` — so errors now originate from a narrower context, which is why most call sites raise a specific `BacktestError` subclass instead of a generic exception.
 
 ---
 

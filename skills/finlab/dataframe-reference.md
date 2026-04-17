@@ -13,7 +13,7 @@ FinlabDataFrame is a powerful extension of pandas DataFrame specifically designe
 - Multi-factor and industry neutralization
 - Integration with backtesting workflows
 
-**Contents:** [Constructor](#constructor) | [Index Conversion](#index-conversion-methods) | [Moving Average & Comparison](#moving-average--comparison-methods) | [Selection](#selection-methods) | [Signal Detection](#signal-detection-methods) | [Industry & Category](#industry--category-methods) | [Neutralization](#neutralization-methods) | [Quantile](#quantile-methods) | [Auto Alignment](#automatic-index-alignment) | [Method Chaining](#method-chaining-patterns)
+**Contents:** [Constructor](#constructor) | [Index Conversion](#index-conversion-methods) | [Moving Average & Comparison](#moving-average--comparison-methods) | [Selection](#selection-methods) | [Signal Detection](#signal-detection-methods) | [Industry & Category](#industry--category-methods) | [Neutralization](#neutralization-methods) | [Quantile](#quantile-methods) | [Cross-Sectional (`.cs`)](#cross-sectional-accessor-cs) | [Within-Industry (`.sector`)](#within-industry-accessor-sector) | [Portfolio Weight (`.weight`)](#portfolio-weight-accessor-weight) | [Rolling Extensions](#rolling-extensions) | [PolarsFrame](#polarsframe-accessors) | [Auto Alignment](#automatic-index-alignment) | [Method Chaining](#method-chaining-patterns)
 
 ---
 
@@ -36,7 +36,7 @@ FinlabDataFrame(df: pd.DataFrame)
 
 **Example:**
 ```python
-from finlab.dataframe import FinlabDataFrame
+from finlab import FinlabDataFrame  # top-level export (v2.0.0); `from finlab.dataframe import FinlabDataFrame` still works
 from finlab import data
 import pandas as pd
 
@@ -700,6 +700,179 @@ median = close.quantile_row(0.5)
 
 # Select stocks above 90th percentile
 expensive = close > close.quantile_row(0.9)
+```
+
+---
+
+## Cross-Sectional Accessor (`.cs`)
+
+*(v2.0.0)* Cross-sectional (per-date, across stocks) transforms. Each method returns a FinlabDataFrame with the same shape.
+
+**Signature:**
+```python
+df.cs.rank() -> FinlabDataFrame               # percentile rank per row (0~1)
+df.cs.zscore() -> FinlabDataFrame              # (x - mean) / std per row
+df.cs.demean() -> FinlabDataFrame              # x - mean per row
+df.cs.winsorize(lower=0.01, upper=0.99) -> FinlabDataFrame  # clip to quantile band
+df.cs.bucket(n=5) -> FinlabDataFrame           # equal-quantile bucketing (0..n-1)
+```
+
+**Example:**
+```python
+from finlab import data
+
+pb = data.get('price_earning_ratio:股價淨值比')
+
+# Percentile rank, winsorize tails, then z-score
+factor = pb.cs.winsorize(0.01, 0.99).cs.zscore()
+
+# Sort into 5 equal-size buckets per day
+buckets = pb.cs.bucket(5)
+top_bucket = buckets == 4  # cheapest bucket
+
+# Demean to remove daily market average
+factor_neutral = pb.cs.demean()
+```
+
+**Why:** Consolidates common factor-engineering primitives in one place — previously these required combining `rank(axis=1)`, manual quantile clipping, and `sub(mean, axis=0)`.
+
+---
+
+## Within-Industry Accessor (`.sector`)
+
+*(v2.0.0)* Within-industry transforms and aggregations (groups stocks by industry for every date). Returns a FinlabDataFrame with the same shape.
+
+**Aggregation methods** (one value per industry, broadcast back to each stock):
+
+```python
+df.sector.mean()       # industry mean
+df.sector.std(ddof=1)  # industry standard deviation
+df.sector.median()     # industry median
+df.sector.sum()        # industry sum
+df.sector.min()        # industry minimum
+df.sector.max()        # industry maximum
+df.sector.count()      # industry valid count
+```
+
+**Transform methods** (same 5 as `.cs` but computed within industry):
+
+```python
+df.sector.rank()
+df.sector.zscore()
+df.sector.demean()
+df.sector.winsorize(lower=0.01, upper=0.99)
+df.sector.bucket(n=5)
+```
+
+**Example:**
+```python
+from finlab import data
+
+pe = data.get('price_earning_ratio:本益比')
+
+# Z-score P/E within industry (compare against industry peers)
+pe_industry_z = pe.sector.zscore()
+
+# Industry-median P/B as a benchmark series
+pb = data.get('price_earning_ratio:股價淨值比')
+industry_median = pb.sector.median()
+cheap_vs_industry = pb < industry_median
+
+# Pick cheapest quintile within each industry
+cheap_bucket = pb.sector.bucket(5) == 0
+```
+
+**Relationship to `industry_rank` / `neutralize_industry`:** `industry_rank()` is equivalent to `df.sector.rank()`. `neutralize_industry()` removes industry means via regression; `df.sector.demean()` does the same via direct subtraction — use `demean()` when you just need industry-centered values and `neutralize_industry()` when you also want to neutralize additional factors jointly.
+
+---
+
+## Portfolio Weight Accessor (`.weight`)
+
+*(v2.0.0)* Post-processing transforms for position DataFrames that already contain weights (values in [-1, 1]). Input must be a weight DataFrame, not boolean signals. Each method returns a new weight DataFrame.
+
+```python
+df.weight.cap_industry(max_weight)
+df.weight.clip_by_volume(total_fund, max_participation_ratio)
+df.weight.inverse_volatility(window=60)
+df.weight.risk_parity(window=60)
+df.weight.correlation(diversify=True)
+df.weight.target_volatility(target=0.15, window=60)
+df.weight.limit_turnover(max_turnover=0.5)
+df.weight.drawdown_control(max_drawdown=0.1)
+```
+
+| Method | Purpose |
+|--------|---------|
+| `cap_industry(max_weight)` | Cap the total weight per industry; redistribute excess proportionally to other holdings |
+| `clip_by_volume(total_fund, max_participation_ratio)` | Clip per-stock weight so the traded notional stays within `max_participation_ratio` of average daily dollar volume |
+| `inverse_volatility(window)` | Reweight so lower-volatility stocks get higher weights (1/σ scaling) |
+| `risk_parity(window)` | Equalize each holding's risk contribution |
+| `correlation(diversify=True)` | Adjust weights using correlation structure — `True` diversifies, `False` concentrates |
+| `target_volatility(target, window)` | Scale total exposure so realized annualized vol ≈ `target` |
+| `limit_turnover(max_turnover)` | Cap two-way turnover between rebalance dates |
+| `drawdown_control(max_drawdown)` | De-lever when running drawdown exceeds threshold |
+
+**Example:**
+```python
+from finlab import data, backtest
+
+pb = data.get('price_earning_ratio:股價淨值比')
+signal = pb.is_smallest(20).astype(float) / 20   # equal-weight top-20 low-P/B
+
+# Apply weight processing: cap industry exposure, then risk-parity within caps
+weights = (
+    signal.weight.cap_industry(max_weight=0.3)
+          .weight.risk_parity(window=60)
+          .weight.target_volatility(target=0.12, window=60)
+          .weight.limit_turnover(max_turnover=0.4)
+)
+
+report = backtest.sim(weights, resample='M')
+```
+
+**Why:** These used to require user-written helpers that frequently introduced lookahead bias or inconsistent handling of NaNs. Bundling them as weight-accessor methods gives a reviewed, tested implementation.
+
+---
+
+## Rolling Extensions
+
+*(v2.0.0)* `FinlabDataFrame.rolling(n)` now supports five additional statistical methods on top of pandas built-ins:
+
+```python
+df.rolling(n).std()     # rolling standard deviation
+df.rolling(n).var()     # rolling variance
+df.rolling(n).skew()    # rolling skewness
+df.rolling(n).kurt()    # rolling kurtosis
+df.rolling(n).median()  # rolling median
+```
+
+**Example:**
+```python
+from finlab import data
+
+close = data.get('price:收盤價')
+returns = close.pct_change()
+
+# 60-day realized volatility
+vol60 = returns.rolling(60).std()
+
+# High-skew stocks (positive tail)
+skew = returns.rolling(60).skew()
+lottery = skew > skew.cs.rank() > 0.8  # top 20% positive skew
+```
+
+---
+
+## PolarsFrame Accessors
+
+*(v2.0.0)* When operating on `PolarsFrame` (the polars-backed variant, installed via `pip install finlab[polars]`), the same `.cs`, `.sector`, and rolling extensions are available with identical semantics. This enables factor pipelines to run on large universes (e.g. US stocks) with polars performance.
+
+```python
+# PolarsFrame exposes:
+pf.cs.rank() / .zscore() / .demean() / .winsorize() / .bucket()
+pf.sector.rank() / .mean() / .std() / .median() / .sum() / .min() / .max() / .count()
+pf.sector.zscore() / .demean() / .winsorize() / .bucket()
+pf.rolling(n).std() / .var() / .skew() / .kurt() / .median()
 ```
 
 ---

@@ -10,8 +10,11 @@ The FinLab data module provides comprehensive access to stock market data, inclu
 
 - [Usage](#usage) - Basic data retrieval with `data.get()`
 - [Data Discovery](#data-discovery) - Find datasets with `data.search()`
+- [Batch Download](#batch-download) - Parallel fetch with `data.gets()`
+- [User Role & Quota](#user-role--quota) - `data.get_role()` / `data.is_vip()`
+- [DataContext Override](#datacontext-override) - Temporarily scope data state
 - [Technical Indicators](#technical-indicators) - Compute indicators with `data.indicator()`
-- [Universe Filtering](#universe-filtering) - Filter by market/category
+- [Universe Filtering](#universe-filtering) - Filter by market/category/index
 - [Data Catalog](#data-catalog) - Complete dataset reference
 - [Storage Configuration](#storage-configuration) - Cache and storage settings
 - [Plotting Data](#plotting-data) - Visualization examples
@@ -105,6 +108,63 @@ results = data.search('收盤')
 df = data.get(results[0])
 ```
 
+**Note:** `data.get()` emits an 80% usage warning before quota is exhausted *(v1.5.9)*, so long-running notebooks surface quota issues early rather than failing mid-run.
+
+---
+
+## Batch Download
+
+*(v2.0.0)* `data.gets()` downloads multiple datasets in parallel with a live progress bar (ANSI in terminal, HTML in Jupyter — auto-detected). Useful for warming the cache at the start of a session.
+
+```python
+from finlab import data
+
+# Returns a dict: {name: FinlabDataFrame}
+frames = data.gets([
+    'price:收盤價',
+    'price:成交股數',
+    'price_earning_ratio:股價淨值比',
+    'fundamental_features:ROE稅後',
+])
+close = frames['price:收盤價']
+```
+
+---
+
+## User Role & Quota
+
+*(v1.5.11)* Query the current session's user tier programmatically.
+
+```python
+from finlab import data
+
+data.get_role()   # 'free' | 'vip' | 'admin' ...
+data.is_vip()     # bool — True if current token has VIP quota
+```
+
+**Use case:** Skip expensive operations or fall back to smaller universes when running under the free tier (500 MB/day vs VIP's 5000 MB/day).
+
+---
+
+## DataContext Override
+
+*(v2.0.0)* `data.override()` is a context manager that temporarily overrides global data state (universe, truncate window, storage flags, etc.) without leaking into the rest of the process. This replaces the older pattern of manually saving and restoring `data.truncate_start` / `data.force_cloud_download` globals and lays groundwork for parallel strategy execution.
+
+```python
+from finlab import data
+
+# Temporarily run a strategy with a different date window and universe
+with data.override(truncate_start='2020-01-01', truncate_end='2022-12-31'):
+    with data.universe(market='TSE_OTC', category='半導體'):
+        close = data.get('price:收盤價')
+# Globals are automatically restored here
+
+# The entire mutable data state is exposed as a `DataContext` object
+ctx = data.DataContext.current()
+```
+
+Prefer `data.override()` / `data.universe()` over directly mutating module-level globals — mutations on the global `DataContext` are not thread-safe.
+
 ---
 
 ## Technical Indicators
@@ -195,9 +255,10 @@ domestic_etf, foreign_etf, leveraged_etf, vanilla_futures_etf, leveraged_futures
 
 ### Parameters
 
-- `market` (str): One of 'ALL', 'TSE', 'OTC', 'TSE_OTC', 'ETF'
+- `market` (str): One of 'ALL', 'TSE', 'OTC', 'TSE_OTC', 'ETF', plus `'TW_CB'` for Taiwan convertible bonds *(v1.5.13)*
 - `category` (str or list): Industry NAMES only (no numeric codes); supports regex fuzzy match (e.g. '電子' matches multiple electronics categories)
 - `exclude_category` (str or list or None): Excluded industry NAMES only (no numeric codes); same regex rules as category
+- `index` (str or list, US only): *(v1.5.13)* Filter US stocks by market index — `'S&P 500'`, `'NASDAQ 100'`. Combinable with `sector`, `industry`, `exchange`. Use with `us_universe()` / `set_us_universe()`
 
 ### Important Notes
 
@@ -231,6 +292,22 @@ from finlab import data
 
 data.set_universe(market='TSE_OTC', category='水泥工業', exclude_category='金融')
 price = data.get('price:收盤價')
+```
+
+**US market index filter** *(v1.5.13)*:
+```python
+from finlab import data
+
+# S&P 500 constituents only
+with data.us_universe(index='S&P 500'):
+    adj_close = data.get('us_price:adj_close')
+
+# NASDAQ 100 technology sector
+with data.us_universe(index='NASDAQ 100', sector='Technology'):
+    prices = data.get('us_price:adj_close')
+
+# Globally scope US session
+data.set_us_universe(index=['S&P 500', 'NASDAQ 100'])
 ```
 
 ---

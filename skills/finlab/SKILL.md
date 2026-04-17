@@ -24,11 +24,11 @@ compatibility: Requires Python 3.10+ and uv package manager (https://docs.astral
    source $HOME/.local/bin/env 2>/dev/null  # Add uv to current shell
    ```
 
-2. **FinLab is installed via uv** (requires >= 1.5.9):
+2. **FinLab is installed via uv** (requires >= 2.0.0):
 
    ```bash
    uv python install 3.12  # Ensure Python is available (skip if already installed)
-   uv pip install --system "finlab>=1.5.9" 2>/dev/null || uv pip install "finlab>=1.5.9"
+   uv pip install --system "finlab>=2.0.0" 2>/dev/null || uv pip install "finlab>=2.0.0"
    ```
 
    **Or use `uv run` for zero-setup execution** (recommended for one-off scripts):
@@ -41,7 +41,7 @@ compatibility: Requires Python 3.10+ and uv package manager (https://docs.astral
 
 3. **API Token is set** (required - finlab will fail without it):
 
-   **If no token, use finlab's built-in login** (available in >= 1.5.9):
+   **If no token, use finlab's built-in login** (available in >= 1.5.9, improved Firebase flow in v1.5.11):
 
    ```python
    import finlab
@@ -270,6 +270,38 @@ See [trading-reference.md](trading-reference.md) for complete broker setup and O
 | [factor-analysis-reference.md](factor-analysis-reference.md)   | IC、Shapley、因子分析                      |
 | [best-practices.md](best-practices.md)                         | 常見錯誤、lookahead bias                   |
 | [machine-learning-reference.md](machine-learning-reference.md) | ML 特徵工程                                |
+
+## What's New (since v1.5.8)
+
+Short version pointers for features added in recent releases. Each reference file tags the exact API with `(vX.Y.Z)`.
+
+**v2.0.0** (2026-04-04) — major release
+- `finlab.exceptions`: structured error hierarchy (`FinlabError`, `DataError`, `BacktestError`, ...) — see [backtesting-reference.md](backtesting-reference.md)
+- `data.gets()`: parallel batch download with progress bar; `data.override()` / `DataContext` for scoped state — see [data-reference.md](data-reference.md)
+- `df.cs` / `df.sector` / `df.weight` accessors; `rolling().std/var/skew/kurt/median`; `PolarsFrame` mirrors — see [dataframe-reference.md](dataframe-reference.md)
+- `PositionStreamMixin` for realtime position streaming — see [trading-reference.md](trading-reference.md)
+- `from finlab import FinlabDataFrame` top-level export
+- `backtest.sim()` refactored into 5 testable stages; `eval()` removed from `optimize.combinations`
+
+**v1.5.13** (2026-03-22)
+- `universe(index=...)` / `us_universe(index=...)`: filter US stocks by S&P 500 / NASDAQ 100
+- New market code `TW_CB` (Taiwan convertible bonds)
+
+**v1.5.11** (2026-03-11)
+- `data.get_role()` / `data.is_vip()`: query user quota tier
+- Report migration to canonical Firestore flow (transparent to users)
+
+**v1.5.9**
+- `finlab.schemas`: typed `PositionEntry`, `OrderEntry`, `PortfolioData` contracts
+- `OrderExecutor.generate_orders(as_entries, quantity_type)` and `generate_order_entries()`
+- `PortfolioSyncManager.get_data_typed()` / `set_data_typed()`
+- `data.get()` 80% quota usage warning
+- `sim()` uses market-specific default `fee_ratio` / `tax_ratio` (no longer hardcoded TW values)
+
+**v1.5.8** (baseline)
+- `verify_strategy()`: automated lookahead-bias detector
+- `report.to_terminal()`: ASCII report for non-Jupyter runs
+- Overall strategy execution 3.4x faster
 
 ## Prevent Lookahead Bias
 
