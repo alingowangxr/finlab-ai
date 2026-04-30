@@ -862,7 +862,7 @@ report = backtest.sim(position)
 
 ## US Equity Examples
 
-The patterns above use Taiwan data paths (`price:收盤價`, etc.). On US market the surface area is the same — `is_largest`, `rank`, `rolling`, `sim()`, `Report` — only the data paths, the active market, and fee/tax defaults change. Four syntax-only templates; read [us-market.md](us-market.md) for data availability, alignment, and universe-construction guidance.
+The patterns above use TW-market data paths (`price:收盤價`, etc.). On US market the surface area is the same — `is_largest`, `rank`, `rolling`, `sim()`, `Report` — only the data paths, the active market, and fee/tax defaults change. Four syntax-only templates; read [us-market.md](us-market.md) for data availability, alignment, and universe-construction guidance.
 
 `data.get()` does not take a `market=` argument. Select the market with `data.set_market('us')` (single-name equities) or `data.set_market('us_fund')` (ETFs / mutual funds) before calling `data.get()` / `sim()`.
 

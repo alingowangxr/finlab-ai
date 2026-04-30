@@ -105,7 +105,7 @@ Revenue transitions from Q2 ($85.78B) to Q3 ($94.93B) exactly on 2024-11-01 on t
 
 ## 3. Report Object API (common confusion)
 
-Backtests on US market return the same `Report` object as Taiwan. Cumulative-return access points:
+Backtests on US market return the same `Report` object as other markets. Cumulative-return access points:
 
 | Attribute / method          | Returns                                              |
 |-----------------------------|------------------------------------------------------|
@@ -131,7 +131,7 @@ Defaults (activated by `data.set_market('us')`):
 | Parameter           | Default    | Why                                                    |
 |---------------------|-----------:|--------------------------------------------------------|
 | `fee_ratio`         | 0          | Commission-free brokers (Robinhood, IBKR Lite, Fidelity) are the common case. |
-| `tax_ratio`         | 0          | US has no trading stamp duty (unlike Taiwan's 0.3%).   |
+| `tax_ratio`         | 0          | US has no trading stamp duty (unlike TW market's 0.3%). |
 | `trade_at_price`    | `'close'`  | Close-price execution is the safe choice for US.       |
 
 Override `fee_ratio` only when modelling a broker that charges per-share fees (IBKR Pro, legacy brokers). Leave `tax_ratio` at 0; short-term-vs-long-term capital-gains tax is a portfolio-accounting concern, not a per-trade simulation parameter.

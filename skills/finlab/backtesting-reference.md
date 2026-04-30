@@ -73,7 +73,7 @@ sim(
 #### fee_ratio
 - **Type:** `float`
 - **Default:** Market-specific *(v1.5.9)* — TW: `1.425/1000`, US: resolved from the active `Market` subclass
-- **Description:** Commission fee ratio applied during trades. When not explicitly provided, `sim()` consults the target `Market` for its default instead of hardcoding Taiwan values, so US/CB backtests use the correct fee schedule automatically.
+- **Description:** Commission fee ratio applied during trades. When not explicitly provided, `sim()` consults the target `Market` for its default instead of hardcoding TW-market values, so US/CB backtests use the correct fee schedule automatically.
 
 #### tax_ratio
 - **Type:** `float`

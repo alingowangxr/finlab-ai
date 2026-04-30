@@ -1,6 +1,6 @@
 ---
 name: finlab
-description: Comprehensive guide for FinLab quantitative trading package across Taiwan and US markets (both single-name equities and ETFs/funds). Use when working with trading strategies, backtesting, stock data, FinLabDataFrame, factor analysis, stock selection, or when the user mentions FinLab, trading, quant trading, US equity, S&P 500 / NASDAQ 100, SPY / QQQ, sector or leveraged ETFs, ETF rotation, 美股, or stock market analysis. Includes data access, strategy development, backtesting workflows, best practices, and US-market specifics (data availability map, filing-date-aligned quarterly fundamentals, US universe construction, USMarket vs. USFundMarket defaults, and ETF backtesting).
+description: Comprehensive guide for FinLab quantitative trading package across global stock markets (TW, US, KR, JP, HK; both single-name equities and ETFs/funds). Use when working with trading strategies, backtesting, stock data, FinLabDataFrame, factor analysis, stock selection, or when the user mentions FinLab, trading, quant trading, US equity, S&P 500 / NASDAQ 100, SPY / QQQ, sector or leveraged ETFs, ETF rotation, 美股, or stock market analysis. Includes data access, strategy development, backtesting workflows, best practices, and US-market specifics (data availability map, filing-date-aligned quarterly fundamentals, US universe construction, USMarket vs. USFundMarket defaults, and ETF backtesting).
 compatibility: Requires Python 3.10+ and uv package manager (https://docs.astral.sh/uv/)
 ---
 
@@ -56,7 +56,7 @@ compatibility: Requires Python 3.10+ and uv package manager (https://docs.astral
 
 ## Market Support
 
-FinLab supports Taiwan (default) and US markets. The rest of this file plus [dataframe-reference.md](dataframe-reference.md), [backtesting-reference.md](backtesting-reference.md), [best-practices.md](best-practices.md), [factor-analysis-reference.md](factor-analysis-reference.md), and [machine-learning-reference.md](machine-learning-reference.md) are **market-agnostic** — the APIs behave the same either way.
+FinLab supports TW (default), US, KR, JP, and HK markets. The rest of this file plus [dataframe-reference.md](dataframe-reference.md), [backtesting-reference.md](backtesting-reference.md), [best-practices.md](best-practices.md), [factor-analysis-reference.md](factor-analysis-reference.md), and [machine-learning-reference.md](machine-learning-reference.md) are **market-agnostic** — the APIs behave the same across markets.
 
 For US-market work — whether single-name equities (`data.set_market('us')`) or ETFs/funds (`data.set_market('us_fund')`) — **read [us-market.md](us-market.md) first**. Queries that should trigger it include: US equity, S&P 500, NASDAQ 100, 美股, SPY / QQQ, sector SPDRs, leveraged / inverse ETFs, ETF rotation, `us_price:*`, `us_fund_price:*`, `data.us_universe(...)`, or `us_income_statement:*` / `us_cash_flow:*` / `us_balance_sheet:*`. It documents:
 
@@ -69,7 +69,7 @@ For US-market work — whether single-name equities (`data.set_market('us')`) or
 - Lookahead-bias checklist specific to US data (rolling-window universe filters, survivorship avoidance)
 - ETF / sector-rotation backtesting via `USFundMarket` and `us_fund_price:*`
 
-Taiwan-market queries can skip that file.
+Other-market queries can skip that file.
 
 ## API Token Tiers & Usage
 
@@ -302,7 +302,7 @@ Short version pointers for features added in recent releases. Each reference fil
 
 **v1.5.13** (2026-03-22)
 - `universe(index=...)` / `us_universe(index=...)`: filter US stocks by S&P 500 / NASDAQ 100
-- New market code `TW_CB` (Taiwan convertible bonds)
+- New market code `TW_CB` (TW convertible bonds)
 
 **v1.5.11** (2026-03-11)
 - `data.get_role()` / `data.is_vip()`: query user quota tier
